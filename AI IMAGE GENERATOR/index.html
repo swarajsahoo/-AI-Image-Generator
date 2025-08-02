@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Image Generator – Professional Edition</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" />
+
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="style.css" />
+
+    <!-- tsParticles for Background Animation -->
+    <script src="https://cdn.jsdelivr.net/npm/tsparticles@2.11.1/tsparticles.bundle.min.js"></script>
+
+    <!-- Inline Style Enhancements -->
+    <style>
+      body {
+        animation: fade-in 1s ease-in-out;
+      }
+
+      @keyframes fade-in {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      header {
+        position: relative;
+        background: linear-gradient(to right, #00c9ff, #92fe9d);
+        color: white;
+        border-radius: 0 0 2rem 2rem;
+        overflow: hidden;
+      }
+
+      header::after {
+        content: "";
+        position: absolute;
+        bottom: -30px;
+        left: 0;
+        width: 100%;
+        height: 60px;
+        background: white;
+        border-radius: 50% 50% 0 0;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #ff758c, #ff7eb3, #92fe9d);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 16px rgba(255, 117, 140, 0.3);
+        transition: all 0.3s ease;
+      }
+
+      .btn-primary:hover {
+        transform: scale(1.05);
+        background: linear-gradient(135deg, #ff9a9e, #fad0c4, #fbc2eb);
+        box-shadow: 0 6px 20px rgba(255, 117, 140, 0.4);
+      }
+
+      .form-control:focus {
+        border-color: #ff758c;
+        box-shadow: 0 0 0 3px rgba(255, 117, 140, 0.3);
+      }
+
+      .section-title {
+        animation: fade-in 0.8s ease;
+        border-left: 6px solid #ff758c;
+        padding-left: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .gallery-grid img {
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+      }
+
+      .gallery-grid img:hover {
+        transform: scale(1.03);
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+      }
+
+      .particle-container {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">
+      <!-- Particle Background -->
+      <div class="particle-container" id="particles"></div>
+
+      <!-- Header -->
+      <header class="container text-center py-5">
+        <h1 class="display-3 fw-bold text-gradient">AI Image Generator</h1>
+        <p class="lead mb-4 text-white">Transform your ideas into stunning visuals with advanced AI technology</p>
+        <div class="status-indicator d-inline-flex align-items-center gap-2" id="networkStatus">
+          <i class="bi bi-wifi text-white"></i>
+          <span>Online</span>
+        </div>
+      </header>
+
+      <!-- Main Form -->
+      <main class="container mb-5">
+        <form id="imageForm" class="p-4 shadow-lg rounded-4 glass-bg">
+          <!-- Prompt Input -->
+          <div class="form-group mb-4">
+            <label for="promptInput" class="form-label fw-semibold">
+              <i class="bi bi-lightbulb me-1"></i>Describe your image
+            </label>
+            <div class="prompt-container">
+              <textarea
+                id="promptInput"
+                class="form-control rounded-3"
+                rows="4"
+                placeholder="A futuristic city at sunset with flying cars and neon lights..."
+                maxlength="400"
+              ></textarea>
+              <div class="prompt-meta d-flex justify-content-between align-items-center mt-2">
+                <span class="char-counter small text-muted">0/400</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm" id="enhanceBtn">
+                  <i class="bi bi-magic me-1"></i>Enhance
+                </button>
+              </div>
+            </div>
+            <div class="prompt-suggestions mt-3" id="promptSuggestions">
+              <span class="suggestion-label text-muted">Try these:</span>
+              <div class="suggestions-list" id="suggestionsList"></div>
+            </div>
+          </div>
+
+          <!-- Options -->
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Image Size</label>
+              <div class="d-flex flex-wrap gap-2" id="sizeOptions">
+                <button type="button" class="btn btn-outline-primary size-btn active" data-size="512x512">512×512</button>
+                <button type="button" class="btn btn-outline-primary size-btn" data-size="1024x1024">1024×1024</button>
+                <button type="button" class="btn btn-outline-primary size-btn" data-size="1024x1792">Portrait</button>
+                <button type="button" class="btn btn-outline-primary size-btn" data-size="1792x1024">Landscape</button>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Style</label>
+              <select class="form-select rounded-3" id="styleSelect">
+                <option value="realistic">Realistic</option>
+                <option value="artistic">Artistic</option>
+                <option value="cartoon">Cartoon</option>
+                <option value="digital-art">Digital Art</option>
+                <option value="photographic">Photographic</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Negative Prompt -->
+          <div class="form-group mb-4">
+            <label for="negativePrompt" class="form-label fw-semibold">
+              <i class="bi bi-x-circle me-1"></i>Negative Prompt <small class="text-muted">(optional)</small>
+            </label>
+            <input type="text" id="negativePrompt" class="form-control rounded-3" placeholder="blurry, low quality, distorted..." />
+          </div>
+
+          <!-- Generate Button -->
+          <div class="text-center">
+            <button type="submit" class="btn btn-primary btn-lg px-5" id="generateBtn">
+              <i class="bi bi-magic me-2"></i>Generate Images
+            </button>
+            <div class="loading-spinner hidden mt-3">
+              <div class="spinner-border text-primary" role="status"></div>
+              <p class="text-muted mt-2">Generating...</p>
+            </div>
+          </div>
+
+          <div class="generation-info mt-4" id="generationInfo">
+            <div class="progress-container hidden" id="progressContainer">
+              <div class="progress">
+                <div class="progress-bar" id="progressBar"></div>
+              </div>
+              <p class="progress-text text-center mt-2" id="progressText">Initializing...</p>
+            </div>
+
+            <div class="retry-section hidden text-center mt-3" id="retrySection">
+              <p class="error-message text-danger fw-semibold" id="errorMessage"></p>
+              <button type="button" class="btn btn-outline-danger" id="retryBtn">
+                <i class="bi bi-arrow-clockwise me-1"></i>Try Again
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <!-- History -->
+        <section class="mt-5" id="historySection">
+          <h3 class="section-title mb-3">
+            <i class="bi bi-clock-history me-2"></i>Recent Prompts
+          </h3>
+          <div class="history-list" id="historyList"></div>
+        </section>
+
+        <!-- Results Gallery -->
+        <section class="mt-5" id="gallerySection">
+          <h3 class="section-title mb-3">
+            <i class="bi bi-images me-2"></i>Generated Images
+          </h3>
+          <div class="gallery-grid" id="galleryGrid"></div>
+          <div class="gallery-placeholder text-center text-muted hidden" id="galleryPlaceholder">
+            <i class="bi bi-image display-1"></i>
+            <h4 class="mt-2">No images yet</h4>
+            <p>Generated images will appear here</p>
+          </div>
+        </section>
+      </main>
+
+      <!-- Toast Container -->
+      <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastContainer"></div>
+
+      <!-- Loading Overlay -->
+      <div class="loading-overlay hidden" id="loadingOverlay">
+        <div class="loading-content text-center">
+          <div class="loading-animation mb-3">
+            <div class="loading-circle"></div>
+            <div class="loading-circle"></div>
+            <div class="loading-circle"></div>
+          </div>
+          <h4 class="loading-title">Creating your image...</h4>
+          <p class="loading-subtitle" id="loadingSubtitle">Please wait while we process your request</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- App JS -->
+    <script src="app.js"></script>
+
+    <!-- Particle Script -->
+    <script>
+      tsParticles.load("particles", {
+        fullScreen: { enable: false },
+        particles: {
+          number: { value: 60 },
+          color: { value: ["#00c9ff", "#92fe9d", "#ff758c"] },
+          shape: { type: "circle" },
+          opacity: { value: 0.6 },
+          size: { value: 3 },
+          move: { enable: true, speed: 1 },
+        },
+        background: {
+          color: "#fdfdfd",
+        }
+      });
+    </script>
+  </body>
+</html>
